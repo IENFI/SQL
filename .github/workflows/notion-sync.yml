@@ -1,0 +1,33 @@
+name: Notion 문제풀이 기록
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '등록 없이 미리보기 (false로 바꾸면 전체 기존 문제 등록)'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: notion-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/notion-sync.cjs
+        env:
+          CATEGORY: ${{ github.event.repository.name == 'SQL' && 'SQL' || 'Algorithm' }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          NOTION_DATA_SOURCE_ID: ${{ secrets.NOTION_DATA_SOURCE_ID }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
